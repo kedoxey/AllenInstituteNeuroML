@@ -53,7 +53,8 @@ for model_id in cell_dirs:
         
     print('\n\n************************************************************\n\n    Parsing %s (cell %i/%i)\n'%(model_id, count, len(cell_dirs)))
     
-    description = load_description('manifest.json')
+    # description = load_description('manifest.json')
+    description = load_description({'manifest_file': 'manifest.json', 'axon_type': ''})
 
     # configure NEURON
     utils = Utils(description)
