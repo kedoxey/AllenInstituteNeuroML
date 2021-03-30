@@ -71,13 +71,13 @@ METADATA = 'sweep_metadata'
 SIMULATION_TEMPERATURE = '34 degC'
 
 def get_test_current(model_id):
-    if TEST_CURRENTS.has_key(model_id):
+    if model_id in TEST_CURRENTS.keys():
         return TEST_CURRENTS[model_id]
     else:
         return 270
     
 def get_test_sweep(model_id):
-    if TEST_SWEEP.has_key(model_id):
+    if model_id in TEST_SWEEP.keys():
         return TEST_SWEEP[model_id]
     else:
         return 55

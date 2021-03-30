@@ -57,7 +57,7 @@ def merge_with_template(model, templfile):
 
 def get_if_iv_for_dataset(dataset_analysis_file):
     
-    print os.getcwd()
+    print(os.getcwd())
     with open(dataset_analysis_file, "r") as json_file:
         data = json.load(json_file)
         
@@ -77,18 +77,18 @@ def get_if_iv_for_dataset(dataset_analysis_file):
         freq_key = '%s:mean_spike_frequency'%(s)
         steady_state_key = '%s:average_1000_1200'%(s)
         
-        if sweeps[s]["pyelectro_iclamp_analysis"].has_key(freq_key) and sweeps[s]["pyelectro_iclamp_analysis"][freq_key]>0:
+        if freq_key in sweeps[s]["pyelectro_iclamp_analysis"].keys() and sweeps[s]["pyelectro_iclamp_analysis"][freq_key]>0:
             currents_rate_spike[current] = sweeps[s]["pyelectro_iclamp_analysis"][freq_key]
         else:
             currents_rate_spike[current] = 0
             currents_v_sub[current] = sweeps[s]["pyelectro_iclamp_analysis"][steady_state_key]
             
     curents_sub = currents_v_sub.keys()
-    curents_sub.sort()
+    sorted(curents_sub)
     v_sub = [currents_v_sub[c] for c in curents_sub]
     
     curents_spike = currents_rate_spike.keys()
-    curents_spike.sort()
+    sorted(curents_sub)
     v = [currents_rate_spike[c] for c in curents_spike]
     
     return data, v_sub, curents_sub, v, curents_spike
