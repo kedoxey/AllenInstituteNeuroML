@@ -5,9 +5,13 @@
 #      nrnivmodl  NEURON
 #########
 
-    
-from allensdk.model.biophysical.utils import Utils
-from allensdk.model.biophysical.runner import load_description
+# from git repo in top directory
+from AllenSDK.allensdk.model.biophysical.utils import Utils
+from AllenSDK.allensdk.model.biophysical.runner import load_description
+
+# from pip install
+# from allensdk.model.biophysical.utils import Utils
+# from allensdk.model.biophysical.runner import load_description
 
 from pyneuroml.neuron import export_to_neuroml2
 from pyneuroml.neuron.nrn_export_utils import clear_neuron
@@ -16,6 +20,7 @@ from pyneuroml import pynml
 
 import json
 import sys
+import re
 
 import os
 import os.path
@@ -29,7 +34,7 @@ cell_dirs = []
 
 cell_dirs = [ f for f in os.listdir('.') if (os.path.isdir(f) and os.path.isfile(f+'/manifest.json')) ]
 
-nml2_cell_dir = '../NeuroML2/'
+nml2_cell_dir = '../NeuroML2'
 
 
 net_ref = "ManyCells"
@@ -43,6 +48,42 @@ clear_neuron()
 count = 0
 
 ca_dynamics = {}
+
+seg_biophys_params = {'soma': {}, 'axon': {}, 'apic': {}, 'dend': {}}
+
+
+def load_cell_parameters(utils):
+    passive = utils.description.data['passive'][0]
+    genome = utils.description.data['genome']
+    conditions = utils.description.data['conditions'][0]
+    h = utils.h
+
+    h("access soma")
+
+    for gen in genome:
+        if gen['mechanism'] == '':
+            seg_biophys_params[gen['section']][gen['name']] = gen['value']
+
+    for sec in h.allsec():
+        sec.Ra = passive['ra']
+        sec.insert('pas')
+        for seg in sec:
+            sec_name = re.sub('[^a-zA-Z]', '', sec.name())
+            seg.pas.e = float(seg_biophys_params[sec_name]['e_pas'])
+            sec.Ra = float(seg_biophys_params[sec_name]['Ra'])
+
+    for gen in genome:
+        if gen["section"] == "glob":  # global parameter
+            h(gen["name"] + " = %g " % gen["value"])
+        else:
+            if gen["mechanism"] != "":
+                h('forsec "' + gen["section"] + '" { insert ' + gen["mechanism"] + ' }')
+            h('forsec "' + gen["section"] + '" { ' + gen["name"] + ' = %s }' % gen["value"])
+
+    for erev in conditions['erev']:
+        h('forsec "' + erev["section"] + '" { ek = %g }' % erev["ek"])
+        h('forsec "' + erev["section"] + '" { ena = %g }' % erev["ena"])
+
 
 for model_id in cell_dirs:
     
@@ -60,13 +101,20 @@ for model_id in cell_dirs:
     utils = Utils(description)
     h = utils.h
 
+    all_active = True if 'e_pas' not in description.data['passive'][0].keys() else False
+    # all_active = False
+
     print("NEURON configured")
 
     # configure model
     manifest = description.manifest
     morphology_path = description.manifest.get_path('MORPHOLOGY')
     utils.generate_morphology(morphology_path.encode('ascii', 'ignore'))
-    utils.load_cell_parameters()
+
+    if all_active:
+        load_cell_parameters(utils)
+    else:
+        utils.load_cell_parameters()
     
     with open('manifest.json', "r") as json_file:
         manifest_info = json.load(json_file)
@@ -137,6 +185,21 @@ for model_id in cell_dirs:
                 if all_match:
                     print("Replacing group named %s with %s"%(sg.id,replace[prefix]))
                     sg.id = replace[prefix]
+        if (sg.id.startswith('OneSecGrp')) and len(sg.members)==0:
+            # replace = {}
+            # replace['soma_'] = 'soma'
+            # replace['axon_'] = 'axon'
+            # replace['apic_'] = 'apic'
+            # replace['dend_'] = 'dend'
+            # for prefix in replace.keys():
+            #     all_match = True
+            #     for inc in sg.includes:
+            #         # print inc
+            #         all_match = all_match and inc.segment_groups.startswith(prefix)
+            #     if all_match:
+            #         print("Replacing group named %s with %s" % (sg.id, replace[prefix]))
+            #         sg.id = replace[prefix]
+            continue
 
     cell.morphology.segment_groups.append(neuroml.SegmentGroup(id="soma_group", includes=[neuroml.Include("soma")]))
     cell.morphology.segment_groups.append(neuroml.SegmentGroup(id="axon_group", includes=[neuroml.Include("axon")]))
@@ -144,23 +207,38 @@ for model_id in cell_dirs:
     
     with open(manifest_info['biophys'][0]["model_file"][1], "r") as json_file:
         cell_info = json.load(json_file)
-        
     
     membrane_properties = neuroml.MembraneProperties()
-    
-    for sc in cell_info['passive'][0]['cm']:
-        membrane_properties.specific_capacitances.append(neuroml.SpecificCapacitance(value='%s uF_per_cm2'%sc['cm'],
-                                            segment_groups=sc['section']))
-                                            
+
+    if all_active:
+        for sc in seg_biophys_params.items():
+            membrane_properties.specific_capacitances.append(
+                neuroml.SpecificCapacitance(value='%s uF_per_cm2' % sc[1]['cm'],
+                                            segment_groups=sc[0]))
+    else:
+        for sc in cell_info['passive'][0]['cm']:
+            membrane_properties.specific_capacitances.append(neuroml.SpecificCapacitance(value='%s uF_per_cm2'%sc['cm'],
+                                                                                         segment_groups=sc['section']))
+
+    resistivities = []
+
     for chan in cell_info['genome']:
         chan_name = chan['mechanism']
-        if  chan['name'] == 'g_pas':
+        if chan['name'] == 'g_pas':
             chan_name = 'pas'
+        if chan['name'] in ['e_pas', 'cm']:
+            continue
+        if chan['name'] == 'Ra':
+            resistivities.append(neuroml.Resistivity(value="%s ohm_cm" % chan['value'], segment_groups=chan['section']))
+            continue
         if chan['mechanism'] != 'CaDynamics':
             erev = '??'
             ion = '??'
             if chan_name == 'pas':
-                erev = '%s mV'%cell_info['passive'][0]['e_pas']
+                if all_active:
+                    erev = '%s mV'%seg_biophys_params[chan['section']]['e_pas']
+                else:
+                    erev = '%s mV' % cell_info['passive'][0]['e_pas']
                 ion = 'non_specific'
             elif chan['mechanism'].startswith('Na'):
                 erev = '%s mV'%cell_info['conditions'][0]['erev'][0]['ena']
@@ -177,10 +255,10 @@ for model_id in cell_dirs:
             if chan['mechanism'] == 'Ca_HVA' or chan['mechanism'] == 'Ca_LVA':
                 
                 cdn = neuroml.ChannelDensityNernst(id='%s_%s'%(chan_name, chan['section']),
-                                            ion_channel=chan_name,
-                                            segment_groups=chan['section'],
-                                            cond_density='%s S_per_cm2'%float(chan['value']),
-                                            ion = ion)
+                                                   ion_channel=chan_name,
+                                                   segment_groups=chan['section'],
+                                                   cond_density='%s S_per_cm2'%float(chan['value']),
+                                                   ion=ion)
                 membrane_properties.channel_density_nernsts.append(cdn)
             else:
                 cd = neuroml.ChannelDensity(id='%s_%s'%(chan_name, chan['section']),
@@ -188,12 +266,17 @@ for model_id in cell_dirs:
                                             segment_groups=chan['section'],
                                             cond_density='%s S_per_cm2'%float(chan['value']),
                                             erev=erev,
-                                            ion = ion)
+                                            ion=ion)
                 membrane_properties.channel_densities.append(cd)
         else:
             if model_id not in ca_dynamics.keys():
                 ca_dynamics[model_id] = {}
-            ca_dynamics[model_id][str(chan['name'])] = chan['value']
+            if all_active:
+                if chan['section'] not in ca_dynamics[model_id].keys():
+                    ca_dynamics[model_id][chan['section']] = {}
+                ca_dynamics[model_id][chan['section']][str(chan['name'])] = chan['value']
+            else:
+                ca_dynamics[model_id][str(chan['name'])] = chan['value']
                 
    
     inc_chans =[]
@@ -208,21 +291,28 @@ for model_id in cell_dirs:
                     neuroml.IncludeType(href="%s.channel.nml" % cdn.ion_channel))
             inc_chans.append(cdn.ion_channel)
 
-    resistivities = []
-    resistivities.append(neuroml.Resistivity(value="%s ohm_cm"%cell_info['passive'][0]['ra'], segment_groups='all'))
+    if not all_active:
+        resistivities.append(neuroml.Resistivity(value="%s ohm_cm"%cell_info['passive'][0]['ra'], segment_groups='all'))
     
     species = []
-    species.append(neuroml.Species(id='ca', \
-                        ion='ca',  \
-                        initial_concentration='0.0001 mM', \
-                        initial_ext_concentration='2 mM', \
-                        concentration_model="CaDynamics_%s"%model_id, \
-                        segment_groups="soma"))
+    if all_active:
+        for model, dynamics in ca_dynamics.items():
+            for seg, _ in dynamics.items():
+                species.append(neuroml.Species(id='ca',
+                                               ion='ca',
+                                               initial_concentration='0.0001 mM',
+                                               initial_ext_concentration='2 mM',
+                                               concentration_model="CaDynamics_%s_%s"%(model_id, seg),
+                                               segment_groups="soma"))
+    else:
+        species.append(neuroml.Species(id='ca',
+                                       ion='ca',
+                                       initial_concentration='0.0001 mM',
+                                       initial_ext_concentration='2 mM',
+                                       concentration_model="CaDynamics_%s" % model_id,
+                                       segment_groups="soma"))
                         
-    
-                        
-    nml_doc.includes.append(
-                    neuroml.IncludeType(href="%s.nml" % 'CaDynamics_all'))
+    nml_doc.includes.append(neuroml.IncludeType(href="%s.nml" % 'CaDynamics_all'))
                        
     xml = '''<?xml version="1.0" encoding="ISO-8859-1"?>
 <neuroml xmlns="http://www.neuroml.org/schema/neuroml2" 
@@ -238,8 +328,16 @@ for model_id in cell_dirs:
 '''     
     # @type ca_dynamics dict
     for key, values in ca_dynamics.items():
+        if all_active:
+            for seg, params in values.items():
+                xml += '    <concentrationModel id="CaDynamics_%s_%s" type="concentrationModelHayEtAl" minCai="1e-4 mM" ' \
+                       'decay="%s ms" depth="0.1 um" gamma="%s" ion="ca"/>\n\n' % (key, seg, params["decay_CaDynamics"],
+                                                                                   params["gamma_CaDynamics"])
 
-        xml += '    <concentrationModel id="CaDynamics_%s" type="concentrationModelHayEtAl" minCai="1e-4 mM" decay="%s ms" depth="0.1 um" gamma="%s" ion="ca"/>\n\n'%(key,values["decay_CaDynamics"],values["gamma_CaDynamics"])
+        else:
+            xml += '    <concentrationModel id="CaDynamics_%s" type="concentrationModelHayEtAl" minCai="1e-4 mM" ' \
+                   'decay="%s ms" depth="0.1 um" gamma="%s" ion="ca"/>\n\n'%(key, values["decay_CaDynamics"],
+                                                                             values["gamma_CaDynamics"])
          
     xml += '''
 </neuroml>'''
@@ -247,9 +345,7 @@ for model_id in cell_dirs:
     ca_file = open(nml2_cell_dir+'CaDynamics_all.nml','w')
     ca_file.write(xml)
     ca_file.close()
-        
-         
-                        
+
     intracellular_properties = neuroml.IntracellularProperties(resistivities=resistivities, species=species)
 
             
@@ -263,7 +359,7 @@ for model_id in cell_dirs:
     pynml.write_neuroml2_file(nml_doc, nml_cell_loc)
     
     
-    pynml.nml2_to_svg(nml_cell_loc)
+    # pynml.nml2_to_svg(nml_cell_loc)
     
     
     pref_duration_ms = 2500
@@ -338,7 +434,6 @@ for model_id in cell_dirs:
     inst.location = neuroml.Location(x=300*X, y=0, z=300*Z)
 
     count+=1
-    
 
 net_file = '%s/%s.net.nml'%(nml2_cell_dir,net_ref)
 neuroml.writers.NeuroMLWriter.write(net_doc, net_file)
