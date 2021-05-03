@@ -1,0 +1,155 @@
+{
+  "biophys": [
+    {
+      "model_file": [
+        "manifest.json",
+        "323452196_fit.json"
+      ],
+      "model_type": "Biophysical - perisomatic"
+    }
+  ],
+  "runs": [
+    {
+      "sweeps": [
+        5,
+        6,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        22,
+        23,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        43,
+        44,
+        45,
+        46,
+        47,
+        49,
+        51,
+        52,
+        55,
+        56,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        66,
+        67,
+        70,
+        71,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117
+      ]
+    }
+  ],
+  "neuron": [
+    {
+      "hoc": [
+        "stdgui.hoc",
+        "import3d.hoc"
+      ]
+    }
+  ],
+  "manifest": [
+    {
+      "type": "dir",
+      "spec": ".",
+      "key": "BASEDIR"
+    },
+    {
+      "type": "dir",
+      "spec": "work",
+      "key": "WORKDIR",
+      "parent": "BASEDIR"
+    },
+    {
+      "type": "file",
+      "spec": "Sst-IRES-Cre_Ai14-172534.04.02.01_513556739_m.swc",
+      "key": "MORPHOLOGY"
+    },
+    {
+      "type": "file",
+      "spec": "Sst-IRES-Cre_Ai14-172534.04.02.01_513556739_marker_m.swc",
+      "key": "MARKER"
+    },
+    {
+      "type": "dir",
+      "spec": "modfiles",
+      "key": "MODFILE_DIR"
+    },
+    {
+      "type": "file",
+      "format": "NWB",
+      "spec": "323452194.nwb",
+      "key": "stimulus_path"
+    },
+    {
+      "parent_key": "WORKDIR",
+      "type": "file",
+      "format": "NWB",
+      "spec": "323452194.nwb",
+      "key": "output_path"
+    }
+  ]
+}

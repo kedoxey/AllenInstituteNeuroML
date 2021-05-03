@@ -1,0 +1,115 @@
+{
+  "biophys": [
+    {
+      "model_file": [
+        "manifest.json",
+        "486110216_fit.json"
+      ],
+      "model_type": "Biophysical - perisomatic"
+    }
+  ],
+  "runs": [
+    {
+      "sweeps": [
+        4,
+        6,
+        7,
+        9,
+        12,
+        13,
+        18,
+        21,
+        22,
+        23,
+        26,
+        27,
+        28,
+        30,
+        32,
+        33,
+        34,
+        35,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        45,
+        46,
+        47,
+        49,
+        50,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        61,
+        62,
+        63,
+        64,
+        67,
+        68,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        78
+      ]
+    }
+  ],
+  "neuron": [
+    {
+      "hoc": [
+        "stdgui.hoc",
+        "import3d.hoc"
+      ]
+    }
+  ],
+  "manifest": [
+    {
+      "type": "dir",
+      "spec": ".",
+      "key": "BASEDIR"
+    },
+    {
+      "type": "dir",
+      "spec": "work",
+      "key": "WORKDIR",
+      "parent": "BASEDIR"
+    },
+    {
+      "type": "file",
+      "spec": "Rbp4-Cre_KL100_Ai14-205727.04.02.01_496085260_m.swc",
+      "key": "MORPHOLOGY"
+    },
+    {
+      "type": "file",
+      "spec": "Rbp4-Cre_KL100_Ai14-205727.04.02.01_496085260_marker_m.swc",
+      "key": "MARKER"
+    },
+    {
+      "type": "dir",
+      "spec": "modfiles",
+      "key": "MODFILE_DIR"
+    },
+    {
+      "type": "file",
+      "format": "NWB",
+      "spec": "486110214.nwb",
+      "key": "stimulus_path"
+    },
+    {
+      "parent_key": "WORKDIR",
+      "type": "file",
+      "format": "NWB",
+      "spec": "486110214.nwb",
+      "key": "output_path"
+    }
+  ]
+}

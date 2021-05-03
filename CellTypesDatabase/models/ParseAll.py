@@ -6,12 +6,12 @@
 #########
 
 # from git repo in top directory
-from AllenSDK.allensdk.model.biophysical.utils import Utils
-from AllenSDK.allensdk.model.biophysical.runner import load_description
+# from AllenSDK.allensdk.model.biophysical.utils import Utils
+# from AllenSDK.allensdk.model.biophysical.runner import load_description
 
 # from pip install
-# from allensdk.model.biophysical.utils import Utils
-# from allensdk.model.biophysical.runner import load_description
+from allensdk.model.biophysical.utils import Utils
+from allensdk.model.biophysical.runner import load_description
 
 from pyneuroml.neuron import export_to_neuroml2
 from pyneuroml.neuron.nrn_export_utils import clear_neuron
@@ -44,10 +44,8 @@ net = neuroml.Network(id=net_ref)
 net_doc.networks.append(net)
 
 clear_neuron()
-    
-count = 0
 
-ca_dynamics = {}
+count = 0
 
 seg_biophys_params = {'soma': {}, 'axon': {}, 'apic': {}, 'dend': {}}
 
@@ -86,14 +84,16 @@ def load_cell_parameters(utils):
 
 
 for model_id in cell_dirs:
-    
+
+    ca_dynamics = {}
+
     if os.path.isdir(model_id):
         os.chdir(model_id)
     else:
         os.chdir('../'+model_id)
-        
+
     print('\n\n************************************************************\n\n    Parsing %s (cell %i/%i)\n'%(model_id, count, len(cell_dirs)))
-    
+
     # description = load_description('manifest.json')
     description = load_description({'manifest_file': 'manifest.json', 'axon_type': ''})
 
@@ -115,19 +115,19 @@ for model_id in cell_dirs:
         load_cell_parameters(utils)
     else:
         utils.load_cell_parameters()
-    
+
     with open('manifest.json', "r") as json_file:
         manifest_info = json.load(json_file)
     with open('metadata.json', "r") as json_file:
         metadata_info = json.load(json_file)
-        
+
     print("Loaded manifest: %s (fit: %s)"%(manifest_info['biophys'][0]["model_type"], manifest_info['biophys'][0]["model_file"][1]))
 
     print("Cell loaded from: %s"%morphology_path)
-    
+
     h.finitialize()
     h.psection()
-    
+
     nml_file_name = "%s.net.nml"%model_id
     nml_net_loc = "%s/%s"%(nml2_cell_dir,nml_file_name)
     nml_cell_file0 = "Cell0.cell.nml"
@@ -138,22 +138,22 @@ for model_id in cell_dirs:
 
     print(' > Exporting to %s'%(nml_net_loc))
 
-    export_to_neuroml2(None, 
-                       nml_net_loc, 
+    export_to_neuroml2(None,
+                       nml_net_loc,
                        separateCellFiles=True,
                        includeBiophysicalProperties=False)
 
     print(' > Exported to: %s and %s'%(nml_net_loc, nml_cell_loc))
-    
-    
+
+
     clear_neuron()
 
     nml_doc = pynml.read_neuroml2_file(nml_cell_loc0)
-        
+
     cell = nml_doc.cells[0]
-    
+
     cell.id = 'Cell_%s'%model_id
-    
+
     notes = ''
     notes+="\n\nExport of a cell model (%s) obtained from the Allen Institute Cell Types Database into NeuroML2"%model_id + \
             "\n\nElectrophysiology on which this model is based: %s"%metadata_info['URL'] + \
@@ -166,9 +166,9 @@ for model_id in cell_dirs:
         if k.startswith("AIBS:"):
             p = neuroml.Property(tag=k, value=metadata_info[k])
             cell.properties.append(p)
-        
+
     print(' > Altering groups')
-    
+
     for sg in cell.morphology.segment_groups:
         print("Found group: %s"%sg.id)
         if (sg.id.startswith('ModelViewParm')) and len(sg.members)==0:
@@ -204,10 +204,10 @@ for model_id in cell_dirs:
     cell.morphology.segment_groups.append(neuroml.SegmentGroup(id="soma_group", includes=[neuroml.Include("soma")]))
     cell.morphology.segment_groups.append(neuroml.SegmentGroup(id="axon_group", includes=[neuroml.Include("axon")]))
     cell.morphology.segment_groups.append(neuroml.SegmentGroup(id="dendrite_group", includes=[neuroml.Include("dend")]))
-    
+
     with open(manifest_info['biophys'][0]["model_file"][1], "r") as json_file:
         cell_info = json.load(json_file)
-    
+
     membrane_properties = neuroml.MembraneProperties()
 
     if all_active:
@@ -251,9 +251,9 @@ for model_id in cell_dirs:
                 ion = 'hcn'
             elif chan['mechanism'].startswith('Ca'):
                 ion = 'ca'
-                
+
             if chan['mechanism'] == 'Ca_HVA' or chan['mechanism'] == 'Ca_LVA':
-                
+
                 cdn = neuroml.ChannelDensityNernst(id='%s_%s'%(chan_name, chan['section']),
                                                    ion_channel=chan_name,
                                                    segment_groups=chan['section'],
@@ -277,8 +277,8 @@ for model_id in cell_dirs:
                 ca_dynamics[model_id][chan['section']][str(chan['name'])] = chan['value']
             else:
                 ca_dynamics[model_id][str(chan['name'])] = chan['value']
-                
-   
+
+
     inc_chans =[]
     for cd in membrane_properties.channel_densities:
         if not cd.ion_channel in inc_chans:
@@ -293,7 +293,7 @@ for model_id in cell_dirs:
 
     if not all_active:
         resistivities.append(neuroml.Resistivity(value="%s ohm_cm"%cell_info['passive'][0]['ra'], segment_groups='all'))
-    
+
     species = []
     if all_active:
         for model, dynamics in ca_dynamics.items():
@@ -311,21 +311,21 @@ for model_id in cell_dirs:
                                        initial_ext_concentration='2 mM',
                                        concentration_model="CaDynamics_%s" % model_id,
                                        segment_groups="soma"))
-                        
+
     nml_doc.includes.append(neuroml.IncludeType(href="%s.nml" % 'CaDynamics_all'))
-                       
+
     xml = '''<?xml version="1.0" encoding="ISO-8859-1"?>
-<neuroml xmlns="http://www.neuroml.org/schema/neuroml2" 
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-        xsi:schemaLocation="http://www.neuroml.org/schema/neuroml2 https://raw.githubusercontent.com/NeuroML/NeuroML2/development/Schemas/NeuroML2/NeuroML_v2beta3.xsd" 
+<neuroml xmlns="http://www.neuroml.org/schema/neuroml2"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.neuroml.org/schema/neuroml2 https://raw.githubusercontent.com/NeuroML/NeuroML2/development/Schemas/NeuroML2/NeuroML_v2beta3.xsd"
         id="CaDynamics_all">
-    
+
     <notes>A set of concentration models for various cells exported to NeuroML, with specific values for gamma and delay</notes>
-    
+
     <!-- This file contains the definition of the ComponentType concentrationModelHayEtAl -->
     <include href="CaDynamics.nml"/>
-    
-'''     
+
+'''
     # @type ca_dynamics dict
     for key, values in ca_dynamics.items():
         if all_active:
@@ -338,74 +338,74 @@ for model_id in cell_dirs:
             xml += '    <concentrationModel id="CaDynamics_%s" type="concentrationModelHayEtAl" minCai="1e-4 mM" ' \
                    'decay="%s ms" depth="0.1 um" gamma="%s" ion="ca"/>\n\n'%(key, values["decay_CaDynamics"],
                                                                              values["gamma_CaDynamics"])
-         
+
     xml += '''
 </neuroml>'''
-         
+
     ca_file = open(nml2_cell_dir+'CaDynamics_all.nml','w')
     ca_file.write(xml)
     ca_file.close()
 
     intracellular_properties = neuroml.IntracellularProperties(resistivities=resistivities, species=species)
 
-            
+
     biophysical_properties = neuroml.BiophysicalProperties(id="biophys",
                                           intracellular_properties=intracellular_properties,
                                           membrane_properties=membrane_properties)
-                                          
+
     cell.biophysical_properties = biophysical_properties
-    
-    
+
+
     pynml.write_neuroml2_file(nml_doc, nml_cell_loc)
-    
-    
+
+
     # pynml.nml2_to_svg(nml_cell_loc)
-    
-    
+
+
     pref_duration_ms = 2500
     pref_dt_ms = 0.005 # used in Allen Neuron runs
-    
+
 
     new_nml_file_name = "Network_%s.net.nml"%model_id
-    
+
     new_net_loc = "%s/%s"%(nml2_cell_dir, new_nml_file_name)
     new_net_doc = pynml.read_neuroml2_file(nml_net_loc)
     new_net = new_net_doc.networks[0]
     new_net_doc.notes = notes
-    
+
     new_net.properties.append(neuroml.Property('recommended_duration_ms',pref_duration_ms))
     new_net.properties.append(neuroml.Property('recommended_dt_ms',pref_dt_ms))
-    
+
     for k in metadata_info.keys():
         if k.startswith("AIBS:"):
             p = neuroml.Property(tag=k, value=metadata_info[k])
             new_net_doc.properties.append(p)
-    
+
     new_net_doc.includes[0].href = nml_cell_file
-    
+
     pop_id = 'Pop_Cell_%s'%model_id
     pop_comp = 'Cell_%s'%model_id
     new_net.populations[0].id = pop_id
     new_net.populations[0].component = pop_comp
 
     stim_ref = "stim"
-    stim = neuroml.PulseGenerator(id=stim_ref, 
-                                  delay="1020ms", 
-                                  duration="1000ms", 
+    stim = neuroml.PulseGenerator(id=stim_ref,
+                                  delay="1020ms",
+                                  duration="1000ms",
                                   amplitude="%spA"%get_test_current(model_id))
     new_net_doc.pulse_generators.append(stim)
-    
+
     input_list = neuroml.InputList(id="%s_input"%stim_ref,
                          component=stim_ref,
                          populations=pop_id)
 
-    input = neuroml.Input(id=0, 
-                          target="../%s/0/%s"%(pop_id, pop_comp), 
-                          destination="synapses")  
+    input = neuroml.Input(id=0,
+                          target="../%s/0/%s"%(pop_id, pop_comp),
+                          destination="synapses")
 
     input_list.input.append(input)
     new_net.input_lists.append(input_list)
-    
+
     pynml.write_neuroml2_file(new_net_doc, new_net_loc)
 
     generate_lems_file_for_neuroml(model_id,
@@ -417,8 +417,8 @@ for model_id in cell_dirs:
                                    nml2_cell_dir,
                                    copy_neuroml = False,
                                    lems_file_generate_seed=1234)
-    
-    
+
+
     net_doc.includes.append(neuroml.IncludeType(nml_cell_file))
 
     pop = neuroml.Population(id="Pop_%s"%model_id, component=cell.id, type="populationList")
@@ -440,4 +440,4 @@ neuroml.writers.NeuroMLWriter.write(net_doc, net_file)
 
 print("Written network with %i cells in network to: %s"%(count,net_file))
 
-pynml.nml2_to_svg(net_file)
+# pynml.nml2_to_svg(net_file)
