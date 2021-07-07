@@ -30058,12 +30058,12 @@ Electrophysiology on which this model is based: http://celltypes.brain-map.org/m
                 <include segmentGroup="apic_43"/>
                 <include segmentGroup="apic_42"/>
             </segmentGroup>
-            <segmentGroup id="ModelViewParmSubset_295">
+            <segmentGroup id="ModelViewParmSubset_331">
                 <include segmentGroup="soma_0"/>
                 <include segmentGroup="axon_0"/>
                 <include segmentGroup="axon_1"/>
             </segmentGroup>
-            <segmentGroup id="ModelViewParmSubset_296">
+            <segmentGroup id="ModelViewParmSubset_332">
                 <include segmentGroup="dend_38"/>
                 <include segmentGroup="dend_35"/>
                 <include segmentGroup="dend_34"/>
@@ -30331,7 +30331,7 @@ Electrophysiology on which this model is based: http://celltypes.brain-map.org/m
                 <include segmentGroup="axon_0"/>
                 <include segmentGroup="axon_1"/>
             </segmentGroup>
-            <segmentGroup id="OneSecGrp_SectionRef_14697">
+            <segmentGroup id="OneSecGrp_SectionRef_16441">
                 <include segmentGroup="soma_0"/>
             </segmentGroup>
             <segmentGroup id="soma_group">

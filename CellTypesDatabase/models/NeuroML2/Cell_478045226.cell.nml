@@ -14079,7 +14079,7 @@ Electrophysiology on which this model is based: http://celltypes.brain-map.org/m
                 <include segmentGroup="dend_8"/>
                 <include segmentGroup="dend_7"/>
             </segmentGroup>
-            <segmentGroup id="OneSecGrp_SectionRef_63417">
+            <segmentGroup id="OneSecGrp_SectionRef_72289">
                 <include segmentGroup="soma_0"/>
             </segmentGroup>
             <segmentGroup id="soma_group">

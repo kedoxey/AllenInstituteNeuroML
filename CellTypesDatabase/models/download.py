@@ -1,7 +1,5 @@
 from allensdk.api.queries.biophysical_api import BiophysicalApi
 
-#from allensdk.api.queries.cell_types_api import CellTypesApi
-
 import sys
 import os
 import json
@@ -21,20 +19,20 @@ def download():
     with open('/Users/katedoxey/Desktop/research/AIBS/parse_models/perisomatic_models.txt', 'rb') as fp:
         perisomatic_model_ids = pickle.load(fp)
 
-    perisomatic_model_ids.remove(486508789)
-    perisomatic_model_ids.remove(483108490)
-    perisomatic_model_ids.remove(486508702)
-    perisomatic_model_ids.remove(487245118)
-    perisomatic_model_ids.remove(487246046)
-    perisomatic_model_ids.remove(480630344)
-    perisomatic_model_ids.remove(489932551)
-    perisomatic_model_ids.remove(482520370)
-    perisomatic_model_ids.remove(489932682)
-    perisomatic_model_ids.remove(487245719)
-    perisomatic_model_ids.remove(486509958)
-    perisomatic_model_ids.remove(473871592)
-    perisomatic_model_ids.remove(488083972)
-    perisomatic_model_ids.remove(482657528)
+    # perisomatic_model_ids.remove(486508789)
+    # perisomatic_model_ids.remove(483108490)
+    # perisomatic_model_ids.remove(486508702)
+    # perisomatic_model_ids.remove(487245118)
+    # perisomatic_model_ids.remove(487246046)
+    # perisomatic_model_ids.remove(480630344)
+    # perisomatic_model_ids.remove(489932551)
+    # perisomatic_model_ids.remove(482520370)
+    # perisomatic_model_ids.remove(489932682)
+    # perisomatic_model_ids.remove(487245719)
+    # perisomatic_model_ids.remove(486509958)
+    # perisomatic_model_ids.remove(473871592)
+    # perisomatic_model_ids.remove(488083972)
+    # perisomatic_model_ids.remove(482657528)
 
     neuronal_model_ids = perisomatic_model_ids
 
@@ -57,7 +55,12 @@ def download():
                     manifest_info = json.load(json_file)
 
                 metadata={}
-                exp_id = int(manifest_info["biophys"][0]["model_file"][1][:9])
+                # exp_id = int(manifest_info["biophys"][0]["model_file"][1][:9])
+                model_file = manifest_info["biophys"][0]["model_file"][1]
+                if model_file[0] == 'f':
+                    exp_id = int(model_file[4:13])
+                else:
+                    exp_id = int(model_file[:9])
                 metadata['exp_id'] = exp_id
 
                 metadata['URL'] = 'http://celltypes.brain-map.org/mouse/experiment/electrophysiology/%s'%exp_id
